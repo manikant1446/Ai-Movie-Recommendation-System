@@ -4,9 +4,6 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# --------------------------------------------------------
-# 1. DATA PREPARATION (Data Filtering)
-# --------------------------------------------------------
 # Load the Kaggle movies dataset from the local CSV file
 csv_path = os.path.join(os.path.dirname(__file__), 'movies.csv')
 movies_df = pd.read_csv(csv_path)
@@ -15,9 +12,7 @@ movies_df = pd.read_csv(csv_path)
 movies_df['genre'] = movies_df['genres'].str.replace(',', ' ')
 movies_df['tags'] = movies_df['genre'] + " " + movies_df['description']
 
-# --------------------------------------------------------
-# 2. SIMILARITY MATCHING 
-# --------------------------------------------------------
+# SIMILARITY MATCHING 
 # Convert the text data into numerical vectors
 vectorizer = TfidfVectorizer(stop_words='english')
 feature_vectors = vectorizer.fit_transform(movies_df['tags']).toarray()
@@ -43,12 +38,8 @@ def get_recommendations(movie_title, top_n=20):
         
     return recommended_titles
 
-# --------------------------------------------------------
-# 3. USER INTERFACE (Streamlit)
-# --------------------------------------------------------
 st.title("🎞️ AI Movie Recommendation System")
 
-# Helper function to find matching movie title
 def find_movie(query):
     if not query or not query.strip():
         return None
@@ -69,7 +60,6 @@ all_genres = sorted(set(
     for genre in genres.split()
 ))
 
-# Columns side-by-side: Adjusted ratio so the search button box is smaller and fits the 🔍 icon perfectly
 col_search, col_btn, col_filter = st.columns([15, 1.7, 5])
 
 with col_search:
@@ -98,7 +88,7 @@ if search_query or search_clicked:
             # Get details of the matched movie
             movie_row = movies_df[movies_df['title'] == matched_movie].iloc[0]
             
-            # 1. Show searched movie details first in a rounded card
+            # Show searched movie details
             st.subheader("Search Result :")
             with st.container(border=True):
                 st.markdown(f"### **{movie_row['title']}** ({int(movie_row['year'])})")
@@ -110,29 +100,24 @@ if search_query or search_clicked:
             
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # 2. Show recommended movies below it
+            # Show recommended movies below it
             with st.spinner('Analyzing genres and descriptions...'):
                 recommendations = get_recommendations(matched_movie, top_n=50)
                 
                 st.subheader("🎬 Recommended Movies:")
                 
-                # Filter recommendations: exclude searched movie, avoid duplicates, and filter by category (max 6)
                 filtered_recs = []
                 for movie in recommendations:
-                    # Skip if it is the searched movie itself
                     if movie.strip().lower() == matched_movie.strip().lower():
                         continue
-                    # Skip if already added
                     if movie in filtered_recs:
                         continue
-                    # Filter by genre
                     if selected_genre == "All Categories" or selected_genre in movies_df[movies_df['title'] == movie]['genre'].values[0]:
                         filtered_recs.append(movie)
                     if len(filtered_recs) == 6:
                         break
                 
                 if filtered_recs:
-                    # Display recommendations in a grid of 3 rounded cards per row
                     cols_per_row = 3
                     for i in range(0, len(filtered_recs), cols_per_row):
                         row_recs = filtered_recs[i:i+cols_per_row]
